@@ -19,18 +19,46 @@ import androidx.compose.animation.core.tween // Для анимации
 import com.majo.lijo.data.local.entities.TaskList
 import com.majo.lijo.ui.components.AddItemDialog
 
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     viewModel: MainViewModel = hiltViewModel(),
-    onListClick: (Long) -> Unit // Callback для навигации
+    onListClick: (Long) -> Unit, // Callback для навигации
+    onSettingsClick: () -> Unit
 ) {
     val lists by viewModel.lists.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
 
+    // Состояние для открытия/закрытия меню
+    var showMenu by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Мои списки") })
+            TopAppBar(
+                title = { Text("Мои списки") },
+                actions = { // 2. Добавляем секцию действий
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Меню")
+                    }
+
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Настройки") },
+                            onClick = {
+                                showMenu = false
+                                onSettingsClick() // Переход в настройки
+                            }
+                        )
+                    }
+                }
+            )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showCreateDialog = true }) {
