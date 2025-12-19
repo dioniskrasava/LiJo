@@ -7,40 +7,50 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.Alignment
-import androidx.hilt.navigation.compose.hiltViewModel // Важно для hiltViewModel()
-import androidx.compose.foundation.ExperimentalFoundationApi // Для animateItemPlacement
-import androidx.compose.animation.core.tween // Для анимации
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.animation.core.tween
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import com.majo.lijo.ui.components.AddItemDialog
 import com.majo.lijo.ui.components.TaskItemCard
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class) // Для animateItemPlacement
+/**
+ * Экран деталей списка задач.
+ * * @param viewModel Внедряется через Hilt.
+ * @param onBackClick Колбэк для возврата на предыдущий экран.
+ */
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ListDetailsScreen(
     viewModel: ListDetailsViewModel = hiltViewModel(),
     onBackClick: () -> Unit
 ) {
+    // Подписка на состояние элементов и названия списка
     val items by viewModel.items.collectAsState()
-    var showAddItemDialog by remember { mutableStateOf(false) } // Простейшая реализация диалога
+    val title by viewModel.listName.collectAsState()
+
+    var showAddItemDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Список дел") },
+                // ТЕПЕРЬ ЗАГОЛОВОК ДИНАМИЧЕСКИЙ
+                title = { Text(text = title) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Назад")
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Назад"
+                        )
                     }
                 }
             )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showAddItemDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Добавить")
+                Icon(Icons.Default.Add, contentDescription = "Добавить задачу")
             }
         }
     ) { paddingValues ->
@@ -48,20 +58,17 @@ fun ListDetailsScreen(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 80.dp) // Отступ под FAB
+            contentPadding = PaddingValues(bottom = 80.dp)
         ) {
             items(
                 items = items,
-                key = { it.itemId } // КРИТИЧНО ВАЖНО для анимации!
+                key = { it.itemId } // Важно для корректной работы анимаций перемещения
             ) { item ->
-
-                // Swipe to Delete можно обернуть здесь в SwipeToDismissBox
-
                 TaskItemCard(
                     item = item,
                     onCheckedChange = { viewModel.onCheckedChange(item) },
-                    onDeleteClick = { /* logic */ },
-                    modifier = Modifier.animateItemPlacement( // <-- ИСПОЛЬЗУЕМ ЭТО
+                    onDeleteClick = { /* Здесь можно добавить удаление задачи */ },
+                    modifier = Modifier.animateItemPlacement(
                         animationSpec = tween(durationMillis = 500)
                     )
                 )

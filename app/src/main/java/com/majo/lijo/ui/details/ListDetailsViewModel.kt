@@ -10,22 +10,51 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
-
+/**
+ * ViewModel для экрана деталей конкретного списка.
+ * * @property repository Репозиторий для работы с данными задач и списков.
+ * @property savedStateHandle Хранилище состояния, из которого мы получаем [listId], переданный при навигации.
+ */
 @HiltViewModel
 class ListDetailsViewModel @Inject constructor(
     private val repository: TaskRepository,
-    savedStateHandle: SavedStateHandle // Для получения аргументов навигации
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val listId: Long = checkNotNull(savedStateHandle["listId"]) // Аргумент из Navigation
+    // Извлекаем ID списка из аргументов навигации
+    private val listId: Long = checkNotNull(savedStateHandle["listId"])
 
-    // StateFlow, который UI будет наблюдать.
-    // Room возвращает Flow, мы конвертируем его в StateFlow.
+    /**
+     * Поток с названием текущего списка.
+     * Мы берем все списки из репозитория и фильтруем тот, чей ID совпадает с нашим.
+     */
+    val listName: StateFlow<String> = repository.allLists
+        .map { lists ->
+            lists.find { it.listId == listId }?.name ?: "Загрузка..."
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = "Список дел"
+        )
+
+    /**
+     * Поток элементов (задач) внутри данного списка.
+     * Обновляется автоматически при изменении данных в БД Room.
+     */
     val items: StateFlow<List<ListItem>> = repository.getItems(listId)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
+    /**
+     * Добавление новой задачи в текущий список.
+     */
     fun addItem(title: String) {
         if (title.isBlank()) return
         viewModelScope.launch {
@@ -33,9 +62,11 @@ class ListDetailsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Переключение статуса выполнения задачи (выполнено/не выполнено).
+     */
     fun onCheckedChange(item: ListItem) {
         viewModelScope.launch {
-            // Вся магия перемещения "вниз" происходит внутри репозитория/DAO
             repository.toggleItemCompletion(item)
         }
     }
