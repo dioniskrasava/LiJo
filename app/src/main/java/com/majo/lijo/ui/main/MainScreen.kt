@@ -33,6 +33,9 @@ fun MainScreen(
     val lists by viewModel.lists.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
 
+    // переменная которая хранит список удаляемых в данный момент категорий
+    var listPendingDeletion by remember { mutableStateOf<TaskList?>(null) }
+
     // Состояние для открытия/закрытия меню
     var showMenu by remember { mutableStateOf(false) }
 
@@ -80,7 +83,7 @@ fun MainScreen(
                     TaskListCard(
                         taskList = list,
                         onClick = { onListClick(list.listId) },
-                        onDelete = { viewModel.deleteList(list) }
+                        onDelete = { listPendingDeletion = list }
                     )
                 }
             }
@@ -94,6 +97,30 @@ fun MainScreen(
                 onConfirm = { name ->
                     viewModel.createList(name)
                     showCreateDialog = false
+                }
+            )
+        }
+
+        // если юзер решил удалить категорию, то получит алерт
+        if (listPendingDeletion != null) {
+            AlertDialog(
+                onDismissRequest = { listPendingDeletion = null },
+                title = { Text("Удалить список?") },
+                text = { Text("Вы уверены, что хотите удалить «${listPendingDeletion?.name}»? Все задачи внутри него также будут удалены.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            listPendingDeletion?.let { viewModel.deleteList(it) }
+                            listPendingDeletion = null // Закрываем диалог
+                        }
+                    ) {
+                        Text("Удалить", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { listPendingDeletion = null }) {
+                        Text("Отмена")
+                    }
                 }
             )
         }
