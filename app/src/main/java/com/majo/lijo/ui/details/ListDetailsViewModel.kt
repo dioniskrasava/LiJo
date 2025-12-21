@@ -33,7 +33,8 @@ class ListDetailsViewModel @Inject constructor(
      */
     val listName: StateFlow<String> = repository.allLists
         .map { lists ->
-            lists.find { it.listId == listId }?.name ?: "Загрузка..."
+            // Теперь обращаемся через .taskList
+            lists.find { it.taskList.listId == listId }?.taskList?.name ?: "Загрузка..."
         }
         .stateIn(
             scope = viewModelScope,

@@ -4,6 +4,7 @@ import com.majo.lijo.data.local.ListItemDao
 import com.majo.lijo.data.local.TaskListDao
 import com.majo.lijo.data.local.entities.ListItem
 import com.majo.lijo.data.local.entities.TaskList
+import com.majo.lijo.data.local.entities.TaskListWithCount
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
@@ -12,7 +13,7 @@ class TaskRepository @Inject constructor(
     private val itemDao: ListItemDao
 ) {
     // Lists
-    val allLists: Flow<List<TaskList>> = listDao.getAllLists()
+    val allLists: Flow<List<TaskListWithCount>> = listDao.getAllListsWithCount()
     suspend fun createList(name: String) = listDao.insertList(TaskList(name = name))
     suspend fun deleteList(taskList: TaskList) = listDao.deleteList(taskList)
 

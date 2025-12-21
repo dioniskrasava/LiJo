@@ -32,15 +32,3 @@ interface ListItemDao {
     suspend fun deleteItem(itemId: Long)
 }
 
-// data/local/TaskListDao.kt
-@Dao
-interface TaskListDao {
-    @Query("SELECT * FROM lists ORDER BY createdAt DESC")
-    fun getAllLists(): Flow<List<TaskList>>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertList(taskList: TaskList): Long
-
-    @Delete
-    suspend fun deleteList(taskList: TaskList)
-}

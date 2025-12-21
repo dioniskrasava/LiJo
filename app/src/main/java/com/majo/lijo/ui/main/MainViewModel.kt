@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.SavedStateHandle
 import com.majo.lijo.data.local.entities.TaskList
+import com.majo.lijo.data.local.entities.TaskListWithCount
 import com.majo.lijo.data.repository.TaskRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -19,11 +20,11 @@ class MainViewModel @Inject constructor(
     private val repository: TaskRepository
 ) : ViewModel() {
 
-    val lists = repository.allLists
+    val lists: StateFlow<List<TaskListWithCount>> = repository.allLists
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList<TaskList>()
+            initialValue = emptyList() // Здесь будет пустой список наших новых объектов
         )
 
     fun createList(name: String) {
