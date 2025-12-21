@@ -39,4 +39,11 @@ class MainViewModel @Inject constructor(
             repository.deleteList(taskList)
         }
     }
+
+    fun updateList(taskList: TaskList, newName: String) {
+        if (newName.isBlank()) return
+        viewModelScope.launch {
+            repository.updateList(taskList.copy(name = newName))
+        }
+    }
 }

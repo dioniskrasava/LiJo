@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.animation.core.tween
+import androidx.compose.material.icons.filled.Edit
 import com.majo.lijo.data.local.entities.TaskList
 import com.majo.lijo.ui.components.AddItemDialog
 import androidx.compose.material.icons.filled.MoreVert
@@ -46,6 +47,9 @@ fun MainScreen(
 
     // Состояние для управления выпадающим меню в TopAppBar
     var showMenu by remember { mutableStateOf(false) }
+
+    // хранит значение того списка, что мы собрались редактировать
+    var listToEdit by remember { mutableStateOf<TaskList?>(null) }
 
     Scaffold(
         topBar = {
@@ -94,7 +98,8 @@ fun MainScreen(
                         taskList = itemWithCount.taskList,
                         taskCount = itemWithCount.taskCount, // Передаем реальное число из БД
                         onClick = { onListClick(itemWithCount.taskList.listId) },
-                        onDelete = { listPendingDeletion = itemWithCount.taskList }
+                        onDelete = { listPendingDeletion = itemWithCount.taskList },
+                        onEdit = { listToEdit = itemWithCount.taskList }
                     )
                 }
             }
@@ -138,6 +143,20 @@ fun MainScreen(
                 }
             )
         }
+
+
+        // Диалог редактирования названия списка
+        if (listToEdit != null) {
+            AddItemDialog(
+                title = "Редактировать список",
+                initialText = listToEdit!!.name, // Нужно будет добавить такой параметр в AddItemDialog
+                onDismiss = { listToEdit = null },
+                onConfirm = { newName ->
+                    viewModel.updateList(listToEdit!!, newName)
+                    listToEdit = null
+                }
+            )
+        }
     }
 }
 
@@ -153,7 +172,8 @@ fun TaskListCard(
     taskList: TaskList,
     taskCount: Int, // Добавляем новый параметр для количества задач
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
 ) {
     Card(
         onClick = onClick,
@@ -183,6 +203,12 @@ fun TaskListCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            // Кнопка редактирования
+            IconButton(onClick = onEdit) {
+                Icon(Icons.Default.Edit, contentDescription = "Редактировать")
+            }
+
+            // Кнопка удаления
             IconButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = "Удалить")
             }

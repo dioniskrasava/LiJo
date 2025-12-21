@@ -7,10 +7,11 @@ import androidx.compose.ui.window.Dialog
 @Composable
 fun AddItemDialog(
     title: String = "Новая задача",
+    initialText: String = "",
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
-    var text by remember { mutableStateOf("") }
+    var text by remember { mutableStateOf(initialText) }
 
     AlertDialog(
         onDismissRequest = onDismiss,

@@ -32,4 +32,7 @@ interface TaskListDao {
 
     @Delete
     suspend fun deleteList(taskList: TaskList)
+
+    @Update
+    suspend fun updateList(taskList: TaskList)
 }

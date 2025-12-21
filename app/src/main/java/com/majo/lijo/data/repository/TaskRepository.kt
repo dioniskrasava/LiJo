@@ -40,4 +40,6 @@ class TaskRepository @Inject constructor(
         )
         itemDao.updateItem(updatedItem)
     }
+
+    suspend fun updateList(taskList: TaskList) = listDao.updateList(taskList)
 }
