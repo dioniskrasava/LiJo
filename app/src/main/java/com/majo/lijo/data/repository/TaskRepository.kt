@@ -14,7 +14,8 @@ class TaskRepository @Inject constructor(
 ) {
     // Lists
     val allLists: Flow<List<TaskListWithCount>> = listDao.getAllListsWithCount()
-    suspend fun createList(name: String) = listDao.insertList(TaskList(name = name))
+    suspend fun createList(name: String, color: Long? = null, icon: String? = null) =
+        listDao.insertList(TaskList(name = name, color = color, icon = icon))
     suspend fun deleteList(taskList: TaskList) = listDao.deleteList(taskList)
 
     // Items
@@ -42,4 +43,9 @@ class TaskRepository @Inject constructor(
     }
 
     suspend fun updateList(taskList: TaskList) = listDao.updateList(taskList)
+
+    // новый метод для переупорядочивания
+    suspend fun reorderLists(lists: List<TaskList>) {
+        listDao.updateLists(*lists.toTypedArray())
+    }
 }

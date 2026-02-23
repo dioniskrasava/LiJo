@@ -16,7 +16,7 @@ plugins {
 
 android {
     namespace = "com.majo.lijo"
-    compileSdk = 34 // Рекомендую пока 34 или 35, 36 (preview) может быть нестабилен
+    compileSdk = 35 // Рекомендую пока 34 или 35, 36 (preview) может быть нестабилен
 
     defaultConfig {
         applicationId = "com.majo.lijo"
@@ -51,11 +51,12 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     // Расширенные иконки (для корзины, стрелочек и т.д.)
-    implementation("androidx.compose.material:material-icons-extended:1.6.8")
+    implementation("androidx.compose.material:material-icons-extended")
 
     // --- Navigation Compose ---
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    implementation(libs.androidx.compose.foundation)
 
     // --- Room Database (KSP) ---
     val roomVersion = "2.6.1"
@@ -80,6 +81,7 @@ dependencies {
 
     // ЛОКАЛ СТОРАДЖ
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+
 }
 
 

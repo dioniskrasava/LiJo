@@ -23,7 +23,8 @@ object AppModule {
             context,
             AppDatabase::class.java,
             "todo_db"
-        ).build()
+        ).addMigrations(AppDatabase.MIGRATION_1_2)   // добавляем миграцию
+            .build()
     }
 
     @Provides

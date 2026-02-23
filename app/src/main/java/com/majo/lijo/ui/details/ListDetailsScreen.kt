@@ -15,13 +15,15 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import com.majo.lijo.ui.components.AddItemDialog
 import com.majo.lijo.ui.components.TaskItemCard
+//import androidx.compose.foundation.lazy.animateItemPlacement
+import com.majo.lijo.data.local.entities.ListItem
 
 /**
  * Экран деталей списка задач.
  * * @param viewModel Внедряется через Hilt.
  * @param onBackClick Колбэк для возврата на предыдущий экран.
  */
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@OptIn( ExperimentalMaterial3Api::class)
 @Composable
 fun ListDetailsScreen(
     viewModel: ListDetailsViewModel = hiltViewModel(),
@@ -63,14 +65,12 @@ fun ListDetailsScreen(
             items(
                 items = items,
                 key = { it.itemId } // Важно для корректной работы анимаций перемещения
-            ) { item ->
+            ) { item: ListItem ->
                 TaskItemCard(
                     item = item,
                     onCheckedChange = { viewModel.onCheckedChange(item) },
                     onDeleteClick = { /* Здесь можно добавить удаление задачи */ },
-                    modifier = Modifier.animateItemPlacement(
-                        animationSpec = tween(durationMillis = 500)
-                    )
+                    modifier = Modifier.animateItem()
                 )
             }
         }

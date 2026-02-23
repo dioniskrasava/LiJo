@@ -12,10 +12,12 @@ import androidx.room.Embedded
 @Entity(tableName = "lists")
 data class TaskList(
     @PrimaryKey(autoGenerate = true)
-    val listId: Long = 0, // Уникальный идентификатор списка
-    val name: String, // Название списка (например, "Покупки")
-    val color: Long? = null, // Цвет списка в формате HEX (Long) для UI
-    val createdAt: Long = System.currentTimeMillis() // Время создания для сортировки
+    val listId: Long = 0,
+    val name: String,
+    val color: Long? = null,
+    val icon: String? = null,                // новое поле
+    val position: Int = 0,                   // новое поле
+    val createdAt: Long = System.currentTimeMillis()
 )
 
 

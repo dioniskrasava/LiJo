@@ -19,18 +19,18 @@ import kotlin.collections.emptyList // ???
 class MainViewModel @Inject constructor(
     private val repository: TaskRepository
 ) : ViewModel() {
-
     val lists: StateFlow<List<TaskListWithCount>> = repository.allLists
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList() // Здесь будет пустой список наших новых объектов
+            initialValue = emptyList()
         )
 
-    fun createList(name: String) {
+    // добавлены параметры color, icon
+    fun createList(name: String, color: Long? = null, icon: String? = null) {
         if (name.isBlank()) return
         viewModelScope.launch {
-            repository.createList(name)
+            repository.createList(name, color, icon)
         }
     }
 
@@ -40,10 +40,21 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun updateList(taskList: TaskList, newName: String) {
+    // обновление с учётом цвета и иконки
+    fun updateList(taskList: TaskList, newName: String, color: Long? = null, icon: String? = null) {
         if (newName.isBlank()) return
         viewModelScope.launch {
-            repository.updateList(taskList.copy(name = newName))
+            repository.updateList(taskList.copy(name = newName, color = color, icon = icon))
+        }
+    }
+
+    // переупорядочивание списков (drag-and-drop)
+    fun reorderLists(newOrder: List<TaskListWithCount>) {
+        viewModelScope.launch {
+            val updatedLists = newOrder.mapIndexed { index, item ->
+                item.taskList.copy(position = index)
+            }
+            repository.reorderLists(updatedLists)
         }
     }
 }

@@ -1,10 +1,16 @@
 package com.majo.lijo.ui.main
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -18,6 +24,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.majo.lijo.data.local.entities.TaskList
 import com.majo.lijo.ui.components.AddItemDialog
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.offset
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +49,11 @@ fun MainScreen(
     var showActionMenuFor by remember { mutableStateOf<TaskList?>(null) }
     var listToEdit by remember { mutableStateOf<TaskList?>(null) }
     var listPendingDeletion by remember { mutableStateOf<TaskList?>(null) }
+
+    // Состояния для отслеживания перетаскиваемого элемента и его смешения
+    var draggingIndex by remember { mutableStateOf<Int?>(null) }
+    var dragOffset by remember { mutableStateOf(0f) }
+    val lazyListState = rememberLazyListState()
 
     Scaffold(
         topBar = {
@@ -71,16 +90,42 @@ fun MainScreen(
             }
         } else {
             LazyColumn(
+                state = lazyListState,
                 modifier = Modifier.padding(padding),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(lists, key = { it.taskList.listId }) { itemWithCount ->
+                itemsIndexed(lists, key = { index, item -> item.taskList.listId }) { index, item ->
+                    val modifier = if (draggingIndex == index) {
+                        Modifier.offset(y = dragOffset.dp)
+                    } else Modifier
+
                     TaskListCard(
-                        taskList = itemWithCount.taskList,
-                        taskCount = itemWithCount.taskCount,
-                        onClick = { onListClick(itemWithCount.taskList.listId) },
-                        onLongClick = { showActionMenuFor = itemWithCount.taskList }
+                        taskList = item.taskList,
+                        taskCount = item.taskCount,
+                        onClick = { onListClick(item.taskList.listId) },
+                        onLongClick = { showActionMenuFor = item.taskList },
+                        modifier = modifier.draggable(
+                            orientation = Orientation.Vertical,
+                            state = rememberDraggableState { delta ->
+                                dragOffset += delta
+                                // Здесь можно вычислять целевой индекс на основе смещения и обновлять список
+                            },
+                            onDragStarted = {
+                                draggingIndex = index
+                            },
+                            onDragStopped = {
+                                // Завершение перетаскивания: обновить позиции в БД
+                                draggingIndex?.let { startIndex ->
+                                    // Вычислить новый индекс и обновить lists
+                                    val newLists = lists.toMutableList()
+                                    // ... логика перестановки
+                                    viewModel.reorderLists(newLists)
+                                }
+                                draggingIndex = null
+                                dragOffset = 0f
+                            }
+                        )
                     )
                 }
             }
@@ -122,11 +167,11 @@ fun MainScreen(
 
         // 2. Диалог создания
         if (showCreateDialog) {
-            AddItemDialog(
+            ListDialog(
                 title = "Новый список",
                 onDismiss = { showCreateDialog = false },
-                onConfirm = { name ->
-                    viewModel.createList(name)
+                onConfirm = { name, color, icon ->
+                    viewModel.createList(name, color, icon)
                     showCreateDialog = false
                 }
             )
@@ -134,12 +179,14 @@ fun MainScreen(
 
         // 3. Диалог редактирования
         if (listToEdit != null) {
-            AddItemDialog(
-                title = "Редактировать название",
-                initialText = listToEdit!!.name,
+            ListDialog(
+                title = "Редактировать список",
+                initialName = listToEdit!!.name,
+                initialColor = listToEdit!!.color,
+                initialIcon = listToEdit!!.icon,
                 onDismiss = { listToEdit = null },
-                onConfirm = { newName ->
-                    viewModel.updateList(listToEdit!!, newName)
+                onConfirm = { newName, color, icon ->
+                    viewModel.updateList(listToEdit!!, newName, color, icon)
                     listToEdit = null
                 }
             )
@@ -175,10 +222,11 @@ fun TaskListCard(
     taskList: TaskList,
     taskCount: Int,
     onClick: () -> Unit,
-    onLongClick: () -> Unit
+    onLongClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .combinedClickable(
                 onClick = onClick,
@@ -192,6 +240,23 @@ fun TaskListCard(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Кружок с иконкой и цветом
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        color = taskList.color?.let { Color(it) } ?: MaterialTheme.colorScheme.primary,
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = getIconFromName(taskList.icon),
+                    contentDescription = null,
+                    tint = Color.White
+                )
+            }
+            Spacer(Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = taskList.name, style = MaterialTheme.typography.titleMedium)
                 Text(
@@ -206,4 +271,119 @@ fun TaskListCard(
             }
         }
     }
+}
+
+// Вспомогательная функция для получения иконки по имени
+fun getIconFromName(iconName: String?): ImageVector {
+    return when (iconName) {
+        "Work" -> Icons.Default.Work
+        "Home" -> Icons.Default.Home
+        "Shopping" -> Icons.Default.ShoppingCart
+        "Favorite" -> Icons.Default.Favorite
+        "Star" -> Icons.Default.Star
+        else -> Icons.Default.List
+    }
+}
+
+
+
+// ВЫНЕСТИ В БУДУЩЕМ В ОТДЕЛЬНЫЙ КОМПОНЕНТ!!!!
+
+val availableColors = listOf(
+    Color(0xFFF44336) to 0xFFF44336, // Красный
+    Color(0xFF4CAF50) to 0xFF4CAF50, // Зелёный
+    Color(0xFF2196F3) to 0xFF2196F3, // Синий
+    Color(0xFFFFC107) to 0xFFFFC107, // Жёлтый
+    Color(0xFF9C27B0) to 0xFF9C27B0, // Фиолетовый
+    Color(0xFFFF9800) to 0xFFFF9800, // Оранжевый
+)
+
+val availableIcons = listOf(
+    Icons.Default.Work to "Work",
+    Icons.Default.Home to "Home",
+    Icons.Default.ShoppingCart to "Shopping",
+    Icons.Default.Favorite to "Favorite",
+    Icons.Default.Star to "Star",
+    Icons.Default.List to "List"  // иконка по умолчанию
+)
+
+@Composable
+fun ListDialog(
+    title: String = "Новый список",
+    initialName: String = "",
+    initialColor: Long? = null,
+    initialIcon: String? = null,
+    onDismiss: () -> Unit,
+    onConfirm: (String, Long?, String?) -> Unit
+) {
+    var name by remember { mutableStateOf(initialName) }
+    var selectedColor by remember { mutableStateOf(initialColor) }
+    var selectedIcon by remember { mutableStateOf(initialIcon) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = title) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Название списка") },
+                    singleLine = true
+                )
+                Spacer(Modifier.height(16.dp))
+                Text("Цвет", style = MaterialTheme.typography.titleSmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    availableColors.forEach { (color, colorLong) ->
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(color)
+                                .clickable { selectedColor = colorLong }
+                                .then(
+                                    if (selectedColor == colorLong)
+                                        Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                    else Modifier
+                                )
+                        )
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+                Text("Иконка", style = MaterialTheme.typography.titleSmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    availableIcons.forEach { (icon, iconName) ->
+                        IconButton(
+                            onClick = { selectedIcon = iconName },
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(
+                                    if (selectedIcon == iconName) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                    else Color.Transparent,
+                                    CircleShape
+                                )
+                        ) {
+                            Icon(icon, contentDescription = iconName)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (name.isNotBlank()) {
+                        onConfirm(name, selectedColor, selectedIcon)
+                    }
+                }
+            ) {
+                Text("Добавить")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Отмена")
+            }
+        }
+    )
 }

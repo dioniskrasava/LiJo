@@ -17,14 +17,14 @@ interface TaskListDao {
         FROM lists 
         LEFT JOIN items ON lists.listId = items.listId 
         GROUP BY lists.listId 
-        ORDER BY lists.createdAt DESC
+        ORDER BY lists.position ASC, lists.createdAt DESC
     """)
     fun getAllListsWithCount(): Flow<List<TaskListWithCount>>
 
     /**
      * Обычное получение всех списков (оставим для совместимости, если нужно)
      */
-    @Query("SELECT * FROM lists ORDER BY createdAt DESC")
+    @Query("SELECT * FROM lists ORDER BY position ASC, createdAt DESC")
     fun getAllLists(): Flow<List<TaskList>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -35,4 +35,8 @@ interface TaskListDao {
 
     @Update
     suspend fun updateList(taskList: TaskList)
+
+    // Массовое обновление для изменения порядка
+    @Update
+    suspend fun updateLists(vararg taskLists: TaskList)
 }
