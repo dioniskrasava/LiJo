@@ -29,8 +29,10 @@ class MainViewModel @Inject constructor(
     // добавлены параметры color, icon
     fun createList(name: String, color: Long? = null, icon: String? = null) {
         if (name.isBlank()) return
+        val currentSize = lists.value.size // текущее количество списков
         viewModelScope.launch {
-            repository.createList(name, color, icon)
+            repository.createList(name, color, icon, position = currentSize)
+            // нужно добавить параметр position в репозиторий
         }
     }
 
@@ -41,10 +43,10 @@ class MainViewModel @Inject constructor(
     }
 
     // обновление с учётом цвета и иконки
-    fun updateList(taskList: TaskList, newName: String, color: Long? = null, icon: String? = null) {
+    fun updateList(taskList: TaskList, newName: String, color: Long? = null, icon: String? = null, newPosition: Int) {
         if (newName.isBlank()) return
         viewModelScope.launch {
-            repository.updateList(taskList.copy(name = newName, color = color, icon = icon))
+            repository.updateList(taskList.copy(name = newName, color = color, icon = icon, position = newPosition))
         }
     }
 

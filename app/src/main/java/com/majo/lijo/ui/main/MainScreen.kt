@@ -32,6 +32,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.offset
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -170,7 +172,7 @@ fun MainScreen(
             ListDialog(
                 title = "Новый список",
                 onDismiss = { showCreateDialog = false },
-                onConfirm = { name, color, icon ->
+                onConfirm = { name, color, icon, _ ->
                     viewModel.createList(name, color, icon)
                     showCreateDialog = false
                 }
@@ -179,14 +181,34 @@ fun MainScreen(
 
         // 3. Диалог редактирования
         if (listToEdit != null) {
+            val currentPosition = listToEdit!!.position
+            val maxPosition = lists.size - 1
             ListDialog(
                 title = "Редактировать список",
                 initialName = listToEdit!!.name,
                 initialColor = listToEdit!!.color,
                 initialIcon = listToEdit!!.icon,
+                initialPosition = currentPosition,
+                maxPosition = maxPosition,
                 onDismiss = { listToEdit = null },
-                onConfirm = { newName, color, icon ->
-                    viewModel.updateList(listToEdit!!, newName, color, icon)
+                onConfirm = { newName, color, icon, newPosition ->
+                    // Обновляем данные самого списка
+                    val updatedTaskList = listToEdit!!.copy(
+                        name = newName,
+                        color = color,
+                        icon = icon
+                    )
+                    // Находим соответствующий элемент в lists
+                    val oldItemWithCount = lists.find { it.taskList.listId == listToEdit!!.listId }!!
+                    val newItemWithCount = oldItemWithCount.copy(taskList = updatedTaskList)
+
+                    // Создаём копию списка и меняем порядок
+                    val mutableLists = lists.toMutableList()
+                    mutableLists.removeAt(currentPosition)
+                    mutableLists.add(newPosition, newItemWithCount)
+
+                    // Вызываем reorderLists с новым порядком (список TaskListWithCount)
+                    viewModel.reorderLists(mutableLists)
                     listToEdit = null
                 }
             )
@@ -313,12 +335,15 @@ fun ListDialog(
     initialName: String = "",
     initialColor: Long? = null,
     initialIcon: String? = null,
+    initialPosition: Int = 0,
+    maxPosition: Int = 0,
     onDismiss: () -> Unit,
-    onConfirm: (String, Long?, String?) -> Unit
+    onConfirm: (String, Long?, String?, Int) -> Unit
 ) {
     var name by remember { mutableStateOf(initialName) }
     var selectedColor by remember { mutableStateOf(initialColor) }
     var selectedIcon by remember { mutableStateOf(initialIcon) }
+    var position by remember { mutableStateOf(initialPosition) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -332,6 +357,27 @@ fun ListDialog(
                     singleLine = true
                 )
                 Spacer(Modifier.height(16.dp))
+
+                // поле позиции (только для редактирования)
+                if (title.contains("Редактировать")) { // или передавать флаг isEditing
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Позиция", modifier = Modifier.weight(1f))
+                        IconButton(
+                            onClick = { if (position > 0) position-- },
+                            enabled = position > 0
+                        ) {
+                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Выше")
+                        }
+                        Text("${position + 1}", modifier = Modifier.padding(horizontal = 8.dp))
+                        IconButton(
+                            onClick = { if (position < maxPosition) position++ },
+                            enabled = position < maxPosition
+                        ) {
+                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Ниже")
+                        }
+                    }
+                }
+
                 Text("Цвет", style = MaterialTheme.typography.titleSmall)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     availableColors.forEach { (color, colorLong) ->
@@ -373,7 +419,7 @@ fun ListDialog(
             TextButton(
                 onClick = {
                     if (name.isNotBlank()) {
-                        onConfirm(name, selectedColor, selectedIcon)
+                        onConfirm(name, selectedColor, selectedIcon, position)
                     }
                 }
             ) {

@@ -14,8 +14,8 @@ class TaskRepository @Inject constructor(
 ) {
     // Lists
     val allLists: Flow<List<TaskListWithCount>> = listDao.getAllListsWithCount()
-    suspend fun createList(name: String, color: Long? = null, icon: String? = null) =
-        listDao.insertList(TaskList(name = name, color = color, icon = icon))
+    suspend fun createList(name: String, color: Long? = null, icon: String? = null, position: Int = 0) =
+        listDao.insertList(TaskList(name = name, color = color, icon = icon, position = position))
     suspend fun deleteList(taskList: TaskList) = listDao.deleteList(taskList)
 
     // Items
