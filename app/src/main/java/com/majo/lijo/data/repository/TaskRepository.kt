@@ -48,4 +48,6 @@ class TaskRepository @Inject constructor(
     suspend fun reorderLists(lists: List<TaskList>) {
         listDao.updateLists(*lists.toTypedArray())
     }
+
+    suspend fun deleteItem(itemId: Long) = itemDao.deleteItem(itemId)
 }

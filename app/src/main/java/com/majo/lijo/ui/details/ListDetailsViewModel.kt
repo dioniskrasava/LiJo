@@ -88,4 +88,10 @@ class ListDetailsViewModel @Inject constructor(
             repository.updateItem(updatedItem)
         }
     }
+
+    fun deleteItem(item: ListItem) {
+        viewModelScope.launch {
+            repository.deleteItem(item.itemId)
+        }
+    }
 }

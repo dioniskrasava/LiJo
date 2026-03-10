@@ -72,7 +72,6 @@ fun ListDetailsScreen(
                 TaskItemCard(
                     item = item,
                     onCheckedChange = { viewModel.onCheckedChange(item) },
-                    onDeleteClick = { /* Здесь можно добавить удаление задачи */ },
                     onLongClick = { editingItem = item }, // долгое нажатие
                     modifier = Modifier.animateItem()
                 )
@@ -96,6 +95,10 @@ fun ListDetailsScreen(
                 onDismiss = { editingItem = null },
                 onConfirm = { newTitle, newListId ->
                     viewModel.editItem(editingItem!!, newTitle, newListId)
+                    editingItem = null
+                },
+                onDelete = {
+                    viewModel.deleteItem(editingItem!!)
                     editingItem = null
                 }
             )
