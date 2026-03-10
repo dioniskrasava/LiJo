@@ -1,6 +1,7 @@
 package com.majo.lijo.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,6 +27,7 @@ fun TaskItemCard(
     item: ListItem,
     onCheckedChange: (Boolean) -> Unit,
     onDeleteClick: () -> Unit,
+    onLongClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Определяем стили в зависимости от статуса
@@ -39,7 +41,11 @@ fun TaskItemCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp, horizontal = 8.dp)
-            .alpha(alpha),
+            .alpha(alpha)
+            .combinedClickable(
+                onClick = { /* ничего не делаем, чтобы не мешать чекбоксу */ },
+                onLongClick = onLongClick
+            ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {

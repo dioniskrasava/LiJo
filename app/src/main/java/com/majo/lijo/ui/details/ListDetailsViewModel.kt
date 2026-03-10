@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.SavedStateHandle
 import com.majo.lijo.data.local.entities.ListItem
+import com.majo.lijo.data.local.entities.TaskListWithCount
 import com.majo.lijo.data.repository.TaskRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -42,6 +43,13 @@ class ListDetailsViewModel @Inject constructor(
             initialValue = "Список дел"
         )
 
+    val allLists: StateFlow<List<TaskListWithCount>> = repository.allLists
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
     /**
      * Поток элементов (задач) внутри данного списка.
      * Обновляется автоматически при изменении данных в БД Room.
@@ -69,6 +77,15 @@ class ListDetailsViewModel @Inject constructor(
     fun onCheckedChange(item: ListItem) {
         viewModelScope.launch {
             repository.toggleItemCompletion(item)
+        }
+    }
+
+    // Редактирование названия и/или перемещение в другую категорию
+    fun editItem(item: ListItem, newTitle: String, newListId: Long) {
+        if (newTitle.isBlank()) return
+        viewModelScope.launch {
+            val updatedItem = item.copy(title = newTitle, listId = newListId)
+            repository.updateItem(updatedItem)
         }
     }
 }

@@ -17,6 +17,7 @@ import com.majo.lijo.ui.components.AddItemDialog
 import com.majo.lijo.ui.components.TaskItemCard
 //import androidx.compose.foundation.lazy.animateItemPlacement
 import com.majo.lijo.data.local.entities.ListItem
+import com.majo.lijo.ui.components.EditItemDialog
 
 /**
  * Экран деталей списка задач.
@@ -32,8 +33,10 @@ fun ListDetailsScreen(
     // Подписка на состояние элементов и названия списка
     val items by viewModel.items.collectAsState()
     val title by viewModel.listName.collectAsState()
+    val allLists by viewModel.allLists.collectAsState()
 
     var showAddItemDialog by remember { mutableStateOf(false) }
+    var editingItem by remember { mutableStateOf<ListItem?>(null) }
 
     Scaffold(
         topBar = {
@@ -70,6 +73,7 @@ fun ListDetailsScreen(
                     item = item,
                     onCheckedChange = { viewModel.onCheckedChange(item) },
                     onDeleteClick = { /* Здесь можно добавить удаление задачи */ },
+                    onLongClick = { editingItem = item }, // долгое нажатие
                     modifier = Modifier.animateItem()
                 )
             }
@@ -81,6 +85,18 @@ fun ListDetailsScreen(
                 onConfirm = { text ->
                     viewModel.addItem(text)
                     showAddItemDialog = false
+                }
+            )
+        }
+
+        if (editingItem != null) {
+            EditItemDialog(
+                item = editingItem!!,
+                categories = allLists,
+                onDismiss = { editingItem = null },
+                onConfirm = { newTitle, newListId ->
+                    viewModel.editItem(editingItem!!, newTitle, newListId)
+                    editingItem = null
                 }
             )
         }
