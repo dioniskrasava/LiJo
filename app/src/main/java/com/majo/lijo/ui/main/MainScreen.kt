@@ -43,18 +43,11 @@ fun MainScreen(
     onSettingsClick: () -> Unit
 ) {
     val lists by viewModel.lists.collectAsState()
-
     var showCreateDialog by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
-
-    // Состояния для управления операциями
     var showActionMenuFor by remember { mutableStateOf<TaskList?>(null) }
     var listToEdit by remember { mutableStateOf<TaskList?>(null) }
     var listPendingDeletion by remember { mutableStateOf<TaskList?>(null) }
-
-    // Состояния для отслеживания перетаскиваемого элемента и его смешения
-    var draggingIndex by remember { mutableStateOf<Int?>(null) }
-    var dragOffset by remember { mutableStateOf(0f) }
     val lazyListState = rememberLazyListState()
 
     Scaffold(
@@ -98,42 +91,17 @@ fun MainScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 itemsIndexed(lists, key = { index, item -> item.taskList.listId }) { index, item ->
-                    val modifier = if (draggingIndex == index) {
-                        Modifier.offset(y = dragOffset.dp)
-                    } else Modifier
-
                     TaskListCard(
                         taskList = item.taskList,
                         taskCount = item.taskCount,
                         onClick = { onListClick(item.taskList.listId) },
-                        onLongClick = { showActionMenuFor = item.taskList },
-                        modifier = modifier.draggable(
-                            orientation = Orientation.Vertical,
-                            state = rememberDraggableState { delta ->
-                                dragOffset += delta
-                                // Здесь можно вычислять целевой индекс на основе смещения и обновлять список
-                            },
-                            onDragStarted = {
-                                draggingIndex = index
-                            },
-                            onDragStopped = {
-                                // Завершение перетаскивания: обновить позиции в БД
-                                draggingIndex?.let { startIndex ->
-                                    // Вычислить новый индекс и обновить lists
-                                    val newLists = lists.toMutableList()
-                                    // ... логика перестановки
-                                    viewModel.reorderLists(newLists)
-                                }
-                                draggingIndex = null
-                                dragOffset = 0f
-                            }
-                        )
+                        onLongClick = { showActionMenuFor = item.taskList }
                     )
                 }
             }
         }
 
-        // 1. Меню выбора действий (появляется после долгого нажатия)
+        // Диалог действий над списком (изменить/удалить)
         if (showActionMenuFor != null) {
             AlertDialog(
                 onDismissRequest = { showActionMenuFor = null },
@@ -154,7 +122,6 @@ fun MainScreen(
                         listPendingDeletion = showActionMenuFor
                         showActionMenuFor = null
                     }) {
-                        // Заменяем color на tint
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = null,
@@ -167,7 +134,7 @@ fun MainScreen(
             )
         }
 
-        // 2. Диалог создания
+        // Диалог создания нового списка
         if (showCreateDialog) {
             ListDialog(
                 title = "Новый список",
@@ -179,7 +146,7 @@ fun MainScreen(
             )
         }
 
-        // 3. Диалог редактирования
+        // Диалог редактирования списка
         if (listToEdit != null) {
             val currentPosition = listToEdit!!.position
             val maxPosition = lists.size - 1
@@ -192,29 +159,23 @@ fun MainScreen(
                 maxPosition = maxPosition,
                 onDismiss = { listToEdit = null },
                 onConfirm = { newName, color, icon, newPosition ->
-                    // Обновляем данные самого списка
                     val updatedTaskList = listToEdit!!.copy(
                         name = newName,
                         color = color,
                         icon = icon
                     )
-                    // Находим соответствующий элемент в lists
                     val oldItemWithCount = lists.find { it.taskList.listId == listToEdit!!.listId }!!
                     val newItemWithCount = oldItemWithCount.copy(taskList = updatedTaskList)
-
-                    // Создаём копию списка и меняем порядок
                     val mutableLists = lists.toMutableList()
                     mutableLists.removeAt(currentPosition)
                     mutableLists.add(newPosition, newItemWithCount)
-
-                    // Вызываем reorderLists с новым порядком (список TaskListWithCount)
                     viewModel.reorderLists(mutableLists)
                     listToEdit = null
                 }
             )
         }
 
-        // 4. Подтверждение удаления
+        // Диалог подтверждения удаления
         if (listPendingDeletion != null) {
             AlertDialog(
                 onDismissRequest = { listPendingDeletion = null },
@@ -262,7 +223,6 @@ fun TaskListCard(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Кружок с иконкой и цветом
             Box(
                 modifier = Modifier
                     .size(40.dp)
@@ -295,7 +255,6 @@ fun TaskListCard(
     }
 }
 
-// Вспомогательная функция для получения иконки по имени
 fun getIconFromName(iconName: String?): ImageVector {
     return when (iconName) {
         "Work" -> Icons.Default.Work
@@ -307,17 +266,13 @@ fun getIconFromName(iconName: String?): ImageVector {
     }
 }
 
-
-
-// ВЫНЕСТИ В БУДУЩЕМ В ОТДЕЛЬНЫЙ КОМПОНЕНТ!!!!
-
 val availableColors = listOf(
-    Color(0xFFF44336) to 0xFFF44336, // Красный
-    Color(0xFF4CAF50) to 0xFF4CAF50, // Зелёный
-    Color(0xFF2196F3) to 0xFF2196F3, // Синий
-    Color(0xFFFFC107) to 0xFFFFC107, // Жёлтый
-    Color(0xFF9C27B0) to 0xFF9C27B0, // Фиолетовый
-    Color(0xFFFF9800) to 0xFFFF9800, // Оранжевый
+    Color(0xFFF44336) to 0xFFF44336,
+    Color(0xFF4CAF50) to 0xFF4CAF50,
+    Color(0xFF2196F3) to 0xFF2196F3,
+    Color(0xFFFFC107) to 0xFFFFC107,
+    Color(0xFF9C27B0) to 0xFF9C27B0,
+    Color(0xFFFF9800) to 0xFFFF9800,
 )
 
 val availableIcons = listOf(
@@ -326,7 +281,7 @@ val availableIcons = listOf(
     Icons.Default.ShoppingCart to "Shopping",
     Icons.Default.Favorite to "Favorite",
     Icons.Default.Star to "Star",
-    Icons.Default.List to "List"  // иконка по умолчанию
+    Icons.Default.List to "List"
 )
 
 @Composable
@@ -358,8 +313,7 @@ fun ListDialog(
                 )
                 Spacer(Modifier.height(16.dp))
 
-                // поле позиции (только для редактирования)
-                if (title.contains("Редактировать")) { // или передавать флаг isEditing
+                if (title.contains("Редактировать")) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("Позиция", modifier = Modifier.weight(1f))
                         IconButton(
@@ -395,6 +349,7 @@ fun ListDialog(
                         )
                     }
                 }
+
                 Spacer(Modifier.height(16.dp))
                 Text("Иконка", style = MaterialTheme.typography.titleSmall)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
