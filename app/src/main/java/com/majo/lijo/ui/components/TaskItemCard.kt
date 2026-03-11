@@ -52,7 +52,7 @@ fun TaskItemCard(
                 onLongClick = onLongClick
             ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
     ) {
         Row(
             modifier = Modifier
